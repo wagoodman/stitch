@@ -21,64 +21,35 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-
-	"github.com/spf13/viper"
-
 	"github.com/spf13/cobra"
 	"github.com/wagoodman/stitch/core"
+	"fmt"
+	"os"
 )
 
-// newCmd represents the new command
-var newCmd = &cobra.Command{
-	Use:   "new [project] [url]",
-	Short: "Create a new project",
-	Long: `Create a new project that will be made of one or more repositories.
-
-todo: example usage with git url, local url, plain http url, and gist url
-`,
-	Args: cobra.RangeArgs(1,2),
-	Run:  newProject,
+// deleteCmd represents the delete command
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Remove a stitch project.",
+	Long: `Remove a stitch project. Note: this will not delete any files.`,
+	Args: cobra.ExactArgs(1),
+	Run: deleteProject,
 }
 
 func init() {
-	rootCmd.AddCommand(newCmd)
+	rootCmd.AddCommand(deleteCmd)
 }
 
-func newProject(cmd *cobra.Command, args []string) {
+func deleteProject(cmd *cobra.Command, args []string) {
 	workspace := core.GetWorkspace()
-	url := args[0]
+	name := args[0]
 
-	if workspace.DoesProjectExist("", url) {
-		fmt.Printf("Unable to add project: project already exists\n")
+	if !workspace.DoesProjectExist(name, "") {
+		fmt.Printf("Project '%s' does not exist\n", name)
 		os.Exit(1)
 	}
 
-	// todo: replace this logic with repository.DefaultRepoPath
-
-	// find the appropriate constructor values
-	workspaceDir := viper.GetString("workspace-path")
-	fields := strings.Split(url, "/")
-	repoName := strings.TrimSuffix(fields[len(fields)-1], ".git")
-	clonePath := filepath.Join(workspaceDir, repoName)
-
-	// create the project
-	projObj := core.NewProject("", url, clonePath)
-
-	// add stitch-project to the workspace store
-	if err := workspace.AddProject(projObj); err != nil {
-		fmt.Printf("Unable to add project: %s\n", err)
-		os.Exit(1)
-	}
-
-	// ensure all project resources exist
-	projObj.Update()
-
-	fmt.Println("Added project!")
-
-	workspace.CurrentProject = projObj.Name
+	delete(workspace.Projects, name)
 	workspace.Save()
+	fmt.Printf("Project '%s' deleted\n", name)
 }

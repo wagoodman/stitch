@@ -2,7 +2,7 @@
 
 Features:
 - clone all related repos from a single descriptor file
-- creates it's own multi-repo docker-compose config... shuold be 100% usable by docker-compose itself
+- creates it's own multi-repo docker-compose config... should be 100% usable by docker-compose itself
 - switch between projects on demand
 - must be cross-platform?
 - seamlessly allow for repos to be a part of multiple projects
@@ -27,7 +27,7 @@ stitch init
 
 ...high level project verbs...
 ```bash
-stitch new <name> <git-url>
+stitch new <git-url> [name]
 stitch delete <name>
 stitch list
 stitch describe <name>  # shows the repos + paths of a project. Additionally shows the services of each repo
@@ -43,14 +43,13 @@ stitch down
 stitch start [service...]
 stitch stop [service...]
 stitch exec <service> <command>
-stitch clone [service...]
-stitch git ... [service...]
+stitch update [service...]    # git sync current branches? or just pull the latest?
 stitch cd <service>
 stitch bash <service>
 stitch open <service> [command]
 stitch list services             # shows services exposed by each repo in the current project
 
-stitch run <script-name> [service???]
+stitch run <script-name> [options]
 
 stitch logs [service]
 stitch ps

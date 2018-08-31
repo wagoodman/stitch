@@ -46,8 +46,11 @@ func listProjects(cmd *cobra.Command, args []string) {
 		fmt.Println("No projects")
 	} else {
 		for projName, projObj := range projects {
-			fmt.Printf("%s : %s\n", projName, projObj.Repository.GitURL)
+			current := ""
+			if projName == workspace.CurrentProject {
+				current = "*"
+			}
+			fmt.Printf(" %s %-20s  (%s)\n", current, projName, projObj.Repository.GitURL)
 		}
 	}
-
 }

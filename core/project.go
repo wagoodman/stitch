@@ -5,62 +5,55 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"gopkg.in/src-d/go-git.v4"
 	yaml "gopkg.in/yaml.v2"
+	"strings"
 )
 
 type Project struct {
 	Name       string
 	Repository Repository
-	Config     *ProjectConfig
-}
-
-type ProjectConfig struct {
-	Name         string
 	Repositories []Repository
 }
 
 func NewProject(name, url, path string) (obj Project) {
-	pc := NewProjectConfig()
-	obj.Config = &pc
 	// todo: enhance constructor
 	obj.Repository = NewRepository()
 	obj.Name = name
 	obj.Repository.GitURL = url
 	obj.Repository.Path = path
+
+	fields := strings.Split(url, "/")
+	obj.Repository.Name = strings.TrimSuffix(fields[len(fields)-1], ".git")
 	return obj
 }
 
-// NewProjectConfig creates a new ProjectConfig populated with sane default values
-func NewProjectConfig() (obj ProjectConfig) {
+// DefaultProject creates a new Project populated with sane default values
+func DefaultProject() (obj Project) {
 	// currently no defaults are necessary
 	// obj.somefield = "default value"
 	return obj
 }
 
 // UnmarshalYAML parses and creates a ProjectConfig from a given user yaml string
-func (projectConfig *ProjectConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	type defaults ProjectConfig
-	defaultValues := defaults(NewProjectConfig())
+func (project *Project) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	type defaults Project
+	defaultValues := defaults(DefaultProject())
 
 	if err := unmarshal(&defaultValues); err != nil {
 		return err
 	}
 
-	*projectConfig = ProjectConfig(defaultValues)
+	*project = Project(defaultValues)
 
 	// set derivative values or overrides here here
-	// projectConfig.somefield = "override value"
+	// project.somefield = "override value"
 
 	// ensure that all fields are valid
-	if err := projectConfig.validate(); err != nil {
+	if err := project.validate(); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-// todo!
-func (projectConfig *ProjectConfig) validate() error {
 	return nil
 }
 
@@ -78,7 +71,15 @@ func (project *Project) Update() error {
 		err := project.Repository.Clone()
 		Check(err, "unable to clone repository")
 	} else {
-		fmt.Println("Repository already exists")
+		// Note: we may not want to pull the latest... this is TBD
+		fmt.Printf("Repository '%s' already exists, pulling latest...\n", project.Repository.Name)
+		err := project.Repository.Pull()
+		if err == git.NoErrAlreadyUpToDate {
+			fmt.Println("...already up to date")
+		} else {
+			Check(err, "unable to pull latest from repository")
+		}
+
 	}
 
 	// search for stitch-project file
@@ -92,13 +93,12 @@ func (project *Project) Update() error {
 		return fmt.Errorf("cannot to read yaml")
 	}
 
-	*project.Config = NewProjectConfig()
-	err = yaml.Unmarshal(yamlString, project.Config)
+	err = yaml.Unmarshal(yamlString, &project)
 	if err != nil {
 		return fmt.Errorf("cannot parse yaml")
 	}
 
-	for _, repository := range project.Config.Repositories {
+	for _, repository := range project.Repositories {
 		if !PathExists(repository.Path) {
 			fmt.Printf("Cloning '%s' repository...\n", repository.Name)
 
@@ -106,7 +106,17 @@ func (project *Project) Update() error {
 			Check(err, "unable to clone repository")
 
 		} else {
-			fmt.Printf("Repository '%s' already exists\n", repository.Name)
+			// Note: we may not want to pull the latest...
+
+			// fmt.Printf("Repository '%s' already exists. pulling latest...\n", repository.Name)
+			// err := repository.Pull()
+			// if err == git.NoErrAlreadyUpToDate {
+			// 	fmt.Println("...already up to date")
+			// } else {
+			// 	Check(err, "unable to pull latest from repository")
+			// }
+
+			fmt.Printf("Repository '%s' already exists. \n", repository.Name)
 		}
 	}
 

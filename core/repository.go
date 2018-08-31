@@ -38,6 +38,10 @@ func (repository *Repository) UnmarshalYAML(unmarshal func(interface{}) error) e
 	// set derivative values or overrides here here
 	repository.Path = repository.DefaultRepoPath()
 
+	if repository.Name == "" {
+		repository.Name = repository.DefaultRepoName()
+	}
+
 	// ensure that all fields are valid
 	if err := repository.validate(); err != nil {
 		return err
@@ -51,11 +55,14 @@ func (Repository *Repository) validate() error {
 	return nil
 }
 
+func (repository *Repository) DefaultRepoName() string {
+	elements := strings.Split(repository.GitURL, "/")
+	return strings.TrimSuffix(elements[len(elements)-1], ".git")
+}
+
 func (repository *Repository) DefaultRepoPath() string {
 	workspaceDir := viper.GetString("workspace-path")
-
-	elements := strings.Split(repository.GitURL, "/")
-	repoSafeName := strings.TrimSuffix(elements[len(elements)-1], ".git")
+	repoSafeName := repository.DefaultRepoName()
 	clonePath := filepath.Join(workspaceDir, repoSafeName)
 	return clonePath
 }
@@ -67,7 +74,9 @@ func (repository *Repository) Clone() error {
 	}
 
 	sshAuth, err := ssh.NewPublicKeysFromFile("git", filepath.Join(homeDir, "/.ssh/id_rsa"), "")
-	Check(err, "cannot use ssh keys")
+	if err != nil {
+		return err
+	}
 
 	_, err = git.PlainClone(repository.Path, false, &git.CloneOptions{
 		URL:      repository.GitURL,
@@ -75,4 +84,38 @@ func (repository *Repository) Clone() error {
 		Auth:     sshAuth,
 	})
 	return err
+}
+
+func (repository *Repository) Pull() error {
+	homeDir, err := homedir.Dir()
+	if err != nil {
+		return err
+	}
+
+	sshAuth, err := ssh.NewPublicKeysFromFile("git", filepath.Join(homeDir, "/.ssh/id_rsa"), "")
+	if err != nil {
+		return err
+	}
+
+	// We instance a new repository targeting the given path (the .git folder)
+	repoObj, err := git.PlainOpen(repository.Path)
+	if err != nil {
+		return err
+	}
+
+	// Get the working directory for the repository
+	worktree, err := repoObj.Worktree()
+	if err != nil {
+		return err
+	}
+
+	// Pull the latest changes from the origin remote and merge into the current branch
+	err = worktree.Pull(&git.PullOptions{
+		RemoteName: "origin",
+		Auth:     sshAuth,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

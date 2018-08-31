@@ -21,9 +21,10 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
+	"github.com/wagoodman/stitch/core"
+	"fmt"
+	"os"
 )
 
 // switchCmd represents the switch command
@@ -39,5 +40,16 @@ func init() {
 }
 
 func switchProject(cmd *cobra.Command, args []string) {
-	fmt.Println("switch called")
+	workspace := core.GetWorkspace()
+	name := args[0]
+
+	if !workspace.DoesProjectExist(name, "") {
+		fmt.Printf("project '%s' does not exist\n", name)
+		os.Exit(1)
+	}
+
+	workspace.CurrentProject = name
+	workspace.Save()
+
+	fmt.Printf("switched to project '%s'\n", name)
 }

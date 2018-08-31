@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"os"
-	"runtime"
 )
 
 // PathExists reports whether the named file or directory exists.
@@ -18,10 +17,11 @@ func PathExists(name string) bool {
 
 func Check(err error, message string) {
 	if err != nil {
-		fmt.Println("Error:")
-		_, file, line, _ := runtime.Caller(1)
-		fmt.Println(line, "\t", file, "\n", err)
-		fmt.Println(message)
+		// fmt.Println("Error:")
+		// _, file, line, _ := runtime.Caller(1)
+		// fmt.Println(line, "\t", file, "\n", err)
+		// fmt.Println(message)
+		fmt.Printf("Error: %s: %s\n", message, err)
 		os.Exit(1)
 	}
 }

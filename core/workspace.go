@@ -58,15 +58,26 @@ func (workspace *Workspace) Save() error {
 	return err
 }
 
-func (workspace *Workspace) DoesProjectExist(name string) bool {
-	if _, ok := workspace.Projects[name]; ok {
-		return true
+func (workspace *Workspace) DoesProjectExist(name, url string) bool {
+	if name != "" {
+		if _, ok := workspace.Projects[name]; ok {
+			return true
+		}
 	}
+	if url != "" {
+		for _, project := range workspace.Projects {
+			if project.Repository.GitURL == url {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 
+
 func (workspace *Workspace) AddProject(project Project) error {
-	if workspace.DoesProjectExist(project.Name) {
+	if workspace.DoesProjectExist(project.Name, project.Repository.GitURL) {
 		return fmt.Errorf("project '%s' already exists", project.Name)
 	}
 	workspace.Projects[project.Name] = project
