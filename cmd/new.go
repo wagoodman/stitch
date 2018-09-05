@@ -23,10 +23,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
-
-	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 	"github.com/wagoodman/stitch/core"
@@ -57,28 +53,41 @@ func newProject(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// todo: replace this logic with repository.DefaultRepoPath
-
-	// find the appropriate constructor values
-	workspaceDir := viper.GetString("workspace-path")
-	fields := strings.Split(url, "/")
-	repoName := strings.TrimSuffix(fields[len(fields)-1], ".git")
-	clonePath := filepath.Join(workspaceDir, repoName)
-
-	// create the project
-	projObj := core.NewProject("", url, clonePath)
+	project, err := core.ReadConfig(url)
+	core.Check(err, "unable to load project")
 
 	// add stitch-project to the workspace store
-	if err := workspace.AddProject(projObj); err != nil {
-		fmt.Printf("Unable to add project: %s\n", err)
+	if err := workspace.AddProject(project); err != nil {
+		fmt.Printf("unable to add project: %s\n", err)
 		os.Exit(1)
 	}
 
-	// ensure all project resources exist
-	projObj.Update()
+	for _, repository := range project.Repositories {
+		if !core.PathExists(repository.Path) {
+			fmt.Printf("Cloning '%s' repository...\n", repository.Name)
+
+			err := repository.Clone()
+			core.Check(err, "unable to clone repository")
+
+		} else {
+			// Note: we may not want to pull the latest...
+
+			// fmt.Printf("Repository '%s' already exists. pulling latest...\n", repository.Name)
+			// err := repository.Pull()
+			// if err == git.NoErrAlreadyUpToDate {
+			// 	fmt.Println("...already up to date")
+			// } else {
+			// 	Check(err, "unable to pull latest from repository")
+			// }
+
+			fmt.Printf("Repository '%s' already exists. \n", repository.Name)
+		}
+	}
+
+	// test loading this project
+	project.Load()
 
 	fmt.Println("Added project!")
-
-	workspace.CurrentProject = projObj.Name
+	workspace.CurrentProjectUrl = project.Repository.GitURL
 	workspace.Save()
 }

@@ -48,7 +48,7 @@ func switchProject(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	workspace.CurrentProject = name
+	workspace.CurrentProjectUrl = name
 	workspace.Save()
 
 	fmt.Printf("switched to project '%s'\n", name)

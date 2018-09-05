@@ -41,16 +41,15 @@ func init() {
 
 func listProjects(cmd *cobra.Command, args []string) {
 	workspace := core.GetWorkspace()
-	projects := workspace.Projects
-	if len(projects) == 0 {
+	if len(workspace.ProjectNames) == 0 {
 		fmt.Println("No projects")
 	} else {
-		for projName, projObj := range projects {
+		for projUrl, projName := range workspace.ProjectNames {
 			current := ""
-			if projName == workspace.CurrentProject {
+			if projUrl == workspace.CurrentProjectUrl {
 				current = "*"
 			}
-			fmt.Printf(" %s %-20s  (%s)\n", current, projName, projObj.Repository.GitURL)
+			fmt.Printf(" %s %-20s  (%s)\n", current, projName, projUrl)
 		}
 	}
 }

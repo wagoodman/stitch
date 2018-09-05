@@ -14,8 +14,9 @@ var ws *Workspace
 var once sync.Once
 
 type Workspace struct {
-	Projects       map[string]Project
-	CurrentProject string
+	// todo: add url to local path lookup
+	ProjectNames      map[string]string
+	CurrentProjectUrl string
 }
 
 // Load decodes the project config from a Gob file
@@ -30,7 +31,7 @@ func GetWorkspace() *Workspace {
 		} else {
 			// create a new config
 			ws = &Workspace{}
-			ws.Projects = make(map[string]Project)
+			ws.ProjectNames = make(map[string]string)
 		}
 		file.Close()
 
@@ -59,14 +60,14 @@ func (workspace *Workspace) Save() error {
 }
 
 func (workspace *Workspace) DoesProjectExist(name, url string) bool {
-	if name != "" {
-		if _, ok := workspace.Projects[name]; ok {
+	if url != "" {
+		if _, ok := workspace.ProjectNames[url]; ok {
 			return true
 		}
 	}
-	if url != "" {
-		for _, project := range workspace.Projects {
-			if project.Repository.GitURL == url {
+	if name != "" {
+		for _, projName := range workspace.ProjectNames {
+			if projName == name {
 				return true
 			}
 		}
@@ -76,14 +77,10 @@ func (workspace *Workspace) DoesProjectExist(name, url string) bool {
 }
 
 
-func (workspace *Workspace) AddProject(project Project) error {
-	if workspace.DoesProjectExist(project.Name, project.Repository.GitURL) {
-		return fmt.Errorf("project '%s' already exists", project.Name)
+func (workspace *Workspace) AddProject(project *Project) error {
+	if workspace.DoesProjectExist("", project.Repository.GitURL) {
+		return fmt.Errorf("project already exists (%s)", project.Repository.GitURL)
 	}
-	workspace.Projects[project.Name] = project
+	workspace.ProjectNames[project.Repository.GitURL] = project.Name
 	return nil
-}
-
-func (workspace *Workspace) GetProjects() map[string]Project {
-	return workspace.Projects
 }

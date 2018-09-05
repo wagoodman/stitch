@@ -49,7 +49,7 @@ func deleteProject(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	delete(workspace.Projects, name)
+	delete(workspace.ProjectNames, name)
 	workspace.Save()
 	fmt.Printf("Project '%s' deleted\n", name)
 }
