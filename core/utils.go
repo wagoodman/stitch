@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // PathExists reports whether the named file or directory exists.
@@ -24,4 +25,14 @@ func Check(err error, message string) {
 		fmt.Printf("Error: %s: %s\n", message, err)
 		os.Exit(1)
 	}
+}
+
+func cleanArgs(s []string) []string {
+	var r []string
+	for _, str := range s {
+		if str != "" {
+			r = append(r, strings.Trim(str, " "))
+		}
+	}
+	return r
 }

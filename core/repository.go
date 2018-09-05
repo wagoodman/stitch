@@ -1,15 +1,19 @@
 package core
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/docker/libcompose/docker"
+	"github.com/docker/libcompose/docker/ctx"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
+	composeProject "github.com/docker/libcompose/project"
 )
 
 type Repository struct {
@@ -159,4 +163,35 @@ func (repository *Repository) GetComposePath() (string, bool) {
 		}
 	}
 	return composeFile, found
+}
+
+func (repository *Repository) GetComposeObject() (composeProject.APIProject, *ctx.Context, error) {
+
+	composeFile, found := repository.GetComposePath()
+	if !found {
+		return nil, nil, fmt.Errorf("could not find docker-compose file")
+	}
+
+	context := &ctx.Context{
+		Context: composeProject.Context{ComposeFiles: []string{composeFile}},
+	}
+
+	project, err := docker.NewProject(context, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// context := &composeProject.Context{
+	// 	ProjectName:  repository.Name,
+	// 	ComposeFiles: []string{composeFile},
+	// }
+	//
+	// project := composeProject.NewProject(context, nil, &composeConfig.ParseOptions{})
+	// fmt.Printf("------> %+v\n", context)
+	//
+	// if err := project.Parse(); err != nil {
+	// 	return nil, nil, fmt.Errorf("failed to parse the compose project from %s: %v", composeFile, err)
+	// }
+	return project, context, nil
+
 }

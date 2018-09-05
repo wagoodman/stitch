@@ -6,15 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	composeProject "github.com/docker/libcompose/project"
-	"github.com/docker/libcompose/docker/ctx"
 	"gopkg.in/yaml.v2"
 )
 
 type Project struct {
 	Name       string
-	Compose    *composeProject.Project
-	Context    *ctx.Context
+	Compose    *Compose
 	Repository Repository
 	Repositories []Repository
 }
@@ -56,7 +53,6 @@ func ReadConfig(url string) (*Project, error) {
 	// override any potentially configured values
 	project.Repository = *repository
 	project.Compose = nil
-	project.Context = nil
 
 	return &project, nil
 }
@@ -71,6 +67,7 @@ func (project *Project) Load() error {
 
 	// stitch the docker-compose project together
 	// todo...
+	project.Compose = &Compose{project.Repositories[0].Path}
 
 	return nil
 }
