@@ -32,6 +32,8 @@ stitch delete <name>
 stitch list
 stitch describe <name>  # shows the repos + paths of a project. Additionally shows the services of each repo
 stitch switch <name>
+# stitch update           # git pull on stitch-project repo and child repos
+
 # what about showing the current project?
 ```
 
@@ -43,14 +45,12 @@ stitch down
 stitch start [service...]
 stitch stop [service...]
 stitch exec <service> <command>
-stitch update [service...]    # git sync current branches? or just pull the latest?
+
 stitch cd <service>
 stitch bash <service>
 stitch open <service> [command]
 stitch list services             # shows services exposed by each repo in the current project
-
 stitch run <script-name> [options]
-
 stitch logs [service]
 stitch ps
 stitch watch   # ps in a loop

@@ -1,13 +1,18 @@
 package core
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/docker/libcompose/docker"
+	"github.com/docker/libcompose/docker/ctx"
+	composeProject "github.com/docker/libcompose/project"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
-	git "gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/transport/ssh"
 )
 
@@ -19,7 +24,17 @@ type Repository struct {
 }
 
 // NewRepository creates a new Repository populated with sane default values
-func NewRepository() (obj Repository) {
+func NewRepository(url, version string) *Repository {
+	repository := Repository{}
+	repository.GitURL = url
+	repository.Path = repository.DefaultRepoPath()
+	repository.Name = repository.DefaultRepoName()
+	repository.Version = version
+	return &repository
+}
+
+// DefaultRepository creates a new Repository populated with sane default values
+func DefaultRepository() (obj Repository) {
 	obj.Version = "master"
 	return obj
 }
@@ -27,7 +42,7 @@ func NewRepository() (obj Repository) {
 // UnmarshalYAML parses and creates a Repository from a given user yaml string
 func (repository *Repository) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type defaults Repository
-	values := defaults(NewRepository())
+	values := defaults(DefaultRepository())
 
 	if err := unmarshal(&values); err != nil {
 		return err
@@ -118,4 +133,65 @@ func (repository *Repository) Pull() error {
 		return err
 	}
 	return nil
+}
+
+func (repository *Repository) GetComposeBytes() ([]byte, error) {
+	var composeBytes []byte
+	var err error
+
+	composeFile, found := repository.GetComposePath()
+	if found {
+		composeBytes, err = ioutil.ReadFile(composeFile)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return composeBytes, nil
+}
+
+func (repository *Repository) GetComposePath() (string, bool) {
+	var found bool
+	var composeFile string
+
+	for _, projectFile := range []string{"docker-compose.yml", "docker-compose.yaml"} {
+		files, _ := filepath.Glob(filepath.Join(repository.Path, projectFile))
+		if len(files) > 0 {
+			found = true
+			composeFile = files[0]
+			break
+		}
+	}
+	return composeFile, found
+}
+
+func (repository *Repository) GetComposeObject() (composeProject.APIProject, *ctx.Context, error) {
+
+	composeFile, found := repository.GetComposePath()
+	if !found {
+		return nil, nil, fmt.Errorf("could not find docker-compose file")
+	}
+
+	context := &ctx.Context{
+		Context: composeProject.Context{ComposeFiles: []string{composeFile}},
+	}
+
+	project, err := docker.NewProject(context, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// context := &composeProject.Context{
+	// 	ProjectName:  repository.Name,
+	// 	ComposeFiles: []string{composeFile},
+	// }
+	//
+	// project := composeProject.NewProject(context, nil, &composeConfig.ParseOptions{})
+	// fmt.Printf("------> %+v\n", context)
+	//
+	// if err := project.Parse(); err != nil {
+	// 	return nil, nil, fmt.Errorf("failed to parse the compose project from %s: %v", composeFile, err)
+	// }
+	return project, context, nil
+
 }
