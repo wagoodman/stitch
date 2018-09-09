@@ -70,7 +70,12 @@ func (project *Project) Load() error {
 	}
 
 	// stitch the docker-compose project together
-	// todo...
+	composeObj, composeCtx, err := project.assembleComposeObject()
+	if err != nil {
+		return err
+	}
+	project.Compose = composeObj
+	project.Context = composeCtx
 
 	return nil
 }

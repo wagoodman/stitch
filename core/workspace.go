@@ -46,6 +46,21 @@ func GetWorkspace() *Workspace {
 	return ws
 }
 
+func LoadCurrentProject() (*Workspace, *Project, error) {
+	workspace := GetWorkspace()
+	project, err := ReadConfig(workspace.CurrentProjectUrl)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to load workspace: %+v\n", err)
+	}
+
+	err = project.Load()
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to load project: %+v\n", err)
+	}
+
+	return workspace, project, nil
+}
+
 // Save encodes the project config to a Gob file
 func (workspace *Workspace) Save() error {
 	path := viper.GetString("state-path")
