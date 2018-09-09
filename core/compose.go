@@ -4,21 +4,18 @@ import (
 	"context"
 	"fmt"
 
-	// "github.com/docker/libcompose/cli/app"
-	// composeConfig "github.com/docker/libcompose/config"
+
 	"github.com/docker/libcompose/docker/ctx"
 	composeProject "github.com/docker/libcompose/project"
 	composeOptions "github.com/docker/libcompose/project/options"
-
-	// composeYaml "github.com/docker/libcompose/yaml"
-
 )
 
 
-func (project *Project) assembleComposeObject() (composeProject.APIProject, *ctx.Context, error) {
-	var composeObj composeProject.APIProject
+func (project *Project) assembleComposeObject() (*composeProject.Project, *ctx.Context, error) {
+	var composeObj *composeProject.Project
 	var composeCtx *ctx.Context
 	var err error
+	var tmp composeProject.APIProject
 
 	for _, repository := range project.Repositories {
 
@@ -28,17 +25,18 @@ func (project *Project) assembleComposeObject() (composeProject.APIProject, *ctx
 		}
 
 		if composeObj == nil {
-			composeObj, composeCtx, err = repository.GetComposeObject()
+			tmp, composeCtx, err = repository.GetComposeObject()
+			composeObj = tmp.(*composeProject.Project)
 			if err != nil {
 				return nil, nil, err
 			}
 
 		} else {
-			// composeBytes, err := repository.GetComposeBytes()
-			// if err != nil {
-			// 	return nil, nil, err
-			// }
-			// composeObj.Load(composeBytes)
+			composeBytes, err := repository.GetComposeBytes()
+			if err != nil {
+				return nil, nil, err
+			}
+			composeObj.Load(composeBytes)
 		}
 
 	}
@@ -52,8 +50,8 @@ func (project *Project) assembleComposeObject() (composeProject.APIProject, *ctx
 	// 	network.RealName = project.SafeName() + "_" + lan
 	// 	config.Networks.Networks = append(config.Networks.Networks, network)
 	// }
-
-
+	//
+	//
 	// fmt.Println("Services...")
 	// for name, config := range composeObj.ServiceConfigs.All() {
 	// 	fmt.Printf("   %-15s %+v\n", name, config)
@@ -91,23 +89,28 @@ func (project *Project) assembleComposeObject() (composeProject.APIProject, *ctx
 // 	return nil
 // }
 
-func (project *Project) ComposeUp(services ...string) error {
-	// create twice to fix circular links
-	if err := project.Compose.Create(context.Background(), composeOptions.Create{}, services...); err != nil {
-		return err
-	}
-	if err := project.Compose.Create(context.Background(), composeOptions.Create{}, services...); err != nil {
-		return err
-	}
-
-	if err := project.Compose.Up(context.Background(), composeOptions.Up{}, services...); err != nil {
-		return err
-	}
+func (project *Project) ComposeLogs(services ...string) error {
 	fmt.Println("Following logs...")
-	project.Compose.Log(context.Background(), true)
+	project.Compose.Log(context.Background(), true, services...)
 	// wait forever
 	<-make(chan interface{})
 	return nil
+}
+
+func (project *Project) ComposeUp(services ...string) error {
+	// create twice to fix circular links
+	// if err := project.Compose.Create(context.Background(), composeOptions.Create{}, services...); err != nil {
+	// 	return err
+	// }
+	// if err := project.Compose.Create(context.Background(), composeOptions.Create{}, services...); err != nil {
+	// 	return err
+	// }
+
+	if err := project.Compose.Up(context.Background(), composeOptions.Up{}); err != nil {
+		return err
+	}
+
+	return project.ComposeLogs(services...)
 }
 
 func (project *Project) ComposeDown() error {

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/docker/libcompose/cli/logger"
 	"github.com/docker/libcompose/docker"
 	"github.com/docker/libcompose/docker/ctx"
 	composeProject "github.com/docker/libcompose/project"
@@ -173,7 +174,10 @@ func (repository *Repository) GetComposeObject() (composeProject.APIProject, *ct
 	}
 
 	context := &ctx.Context{
-		Context: composeProject.Context{ComposeFiles: []string{composeFile}},
+		Context: composeProject.Context{
+			ComposeFiles: []string{composeFile},
+			LoggerFactory: logger.NewColorLoggerFactory(),
+		},
 	}
 
 	project, err := docker.NewProject(context, nil)

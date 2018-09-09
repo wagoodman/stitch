@@ -39,12 +39,8 @@ func init() {
 }
 
 func composeUp(cmd *cobra.Command, args []string) {
-	workspace := core.GetWorkspace()
-	project, err := core.ReadConfig(workspace.CurrentProjectUrl)
-	core.Check(err, "unable to read project")
-
-	err = project.Load()
-	core.Check(err, "unable to load project")
+	_, project, err := core.LoadCurrentProject()
+	core.Check(err, "unable to load current stitch project")
 
 	err = project.ComposeUp(args...)
 	core.Check(err, "unable to complete compose up")

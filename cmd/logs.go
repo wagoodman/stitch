@@ -25,23 +25,23 @@ import (
 	"github.com/wagoodman/stitch/core"
 )
 
-// downCmd represents the up command
-var downCmd = &cobra.Command{
-	Use:   "down",
-	Short: "Stop and destroy all project application containers",
-	Long: `Stop and destroy all project application containers`,
-	Args: cobra.ExactArgs(0),
-	Run: composeDown,
+// logsCmd represents the logs command
+var logsCmd = &cobra.Command{
+	Use:   "logs",
+	Short: "Show the logs for all stitch-project containers",
+	Long: `Show the logs for all stitch-project containers`,
+	Run: composeLogs,
 }
 
 func init() {
-	rootCmd.AddCommand(downCmd)
+	rootCmd.AddCommand(logsCmd)
 }
 
-func composeDown(cmd *cobra.Command, args []string) {
+
+func composeLogs(cmd *cobra.Command, args []string) {
 	_, project, err := core.LoadCurrentProject()
 	core.Check(err, "unable to load current stitch project")
 
-	err = project.ComposeDown()
-	core.Check(err, "unable to complete compose down")
+	err = project.ComposeLogs(args...)
+	core.Check(err, "unable to complete compose logs")
 }

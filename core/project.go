@@ -74,7 +74,7 @@ func (project *Project) Load() error {
 	if err != nil {
 		return err
 	}
-	project.Compose = composeObj.(*composeProject.Project)
+	project.Compose = composeObj
 	project.Context = composeCtx
 
 	return nil
